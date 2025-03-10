@@ -29,6 +29,7 @@ describe("Given I am connected as an employee", () => {
       window.onNavigate(ROUTES_PATH.Bills);
       await waitFor(() => screen.getByTestId("icon-window"));
       const windowIcon = screen.getByTestId("icon-window");
+      expect(windowIcon.id).toBe("layout-icon1");
       //to-do write expect expression
     });
     test("Then bills should be ordered from earliest to latest", () => {
