@@ -24,6 +24,8 @@ export default class NewBill {
     const filePath = e.target.value.split(/\\/g);
     const fileName = filePath[filePath.length - 1];
 
+    //Resolution Issue 3
+
     // Vérification de l'extension du fichier
     const ValidExtensions = ["jpg", "jpeg", "png"];
     const fileExtension = fileName.split(".").pop().toLowerCase();
