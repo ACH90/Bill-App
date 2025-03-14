@@ -9,21 +9,33 @@ import { bills } from "../fixtures/bills.js";
 import { ROUTES, ROUTES_PATH } from "../constants/routes.js";
 import { localStorageMock } from "../__mocks__/localStorage.js";
 import userEvent from "@testing-library/user-event";
+import { handleClickNewBill } from "../containers/Bills.js";
+import { getBills } from "../containers/Bills.js";
+import store from "../app/Store.js";
+import { formatDate, formatStatus } from "../app/format.js";
+
+// Simule la fonction formatDate et formatStatus pour les tests
+jest.mock("../app/format.js", () => ({
+  formatDate: jest.fn(),
+  formatStatus: jest.fn(),
+}));
 
 import router from "../app/Router.js";
 
 describe("Given I am connected as an employee", () => {
+  beforeAll(() => {
+    Object.defineProperty(window, "localStorage", {
+      value: localStorageMock,
+    });
+    window.localStorage.setItem(
+      "user",
+      JSON.stringify({
+        type: "Employee",
+      })
+    );
+  });
   describe("When I am on Bills Page", () => {
     test("Then bill icon in vertical layout should be highlighted", async () => {
-      Object.defineProperty(window, "localStorage", {
-        value: localStorageMock,
-      });
-      window.localStorage.setItem(
-        "user",
-        JSON.stringify({
-          type: "Employee",
-        })
-      );
       const root = document.createElement("div");
       root.setAttribute("id", "root");
       document.body.append(root);
@@ -45,51 +57,165 @@ describe("Given I am connected as an employee", () => {
       const datesSorted = [...dates].sort(antiChrono);
       expect(dates).toEqual(datesSorted);
     });
-    //-------------------MES TESTS------------------
-    describe("When I click on the New bill button", () => {
-      test("Then I should be redirected to new bill form", () => {
-        document.body.innerHTML = BillsUI({ data: bills });
-        const onNavigate = (pathname) => {
-          document.body.innerHTML = ROUTES({ pathname });
-        };
-        const sampleBills = new Bills({
-          document,
-          onNavigate,
-          store: null,
-          localStorage: window.localStorage,
-        });
-        const handleClickNewBill = jest.fn(sampleBills.handleClickNewBill);
-        const newBillButton = screen.getByTestId("btn-new-bill");
-        newBillButton.addEventListener("click", handleClickNewBill);
-        userEvent.click(newBillButton);
-        expect(handleClickNewBill).toHaveBeenCalled();
-        expect(screen.getByText("Envoyer une note de frais")).toBeTruthy();
-      });
-    });
+  });
+  //-------------------MES TESTS------------------
+  describe("When I click on the New bill button", () => {
+    test("Then I should be redirected to new bill form", () => {
+      // Charger le HTML initial avec les factures
+      document.body.innerHTML = BillsUI({ data: bills });
 
-    test("Then clicking on the eye icon should open a modal with handleClickIconEye", () => {
-      //Mock de la fonction handleClickIconEye
-      const handleClickIconEye = jest.fn();
-      //Ajout d'une icone dans le DOM
-      document.body.innerHTML = `<div data-testid="icon-eye"></div>`;
+      // Fonction de navigation pour rediriger
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname });
+      };
 
-      //Instanciation de Bills avec la fonction mockée
-      const bills = new Bills({
+      // Créer une instance de Bills avec les dépendances nécessaires
+      const billsInstance = new Bills({
         document,
-        onNavigate: jest.fn(),
+        onNavigate,
+        store: null,
+        localStorage,
+      });
+
+      // Sélectionner le bouton "New Bill"
+      const newBillButton = screen.getByTestId("btn-new-bill");
+
+      // Ajouter un eventListener à ce bouton qui appelle handleClickNewBill de l'instance de Bills
+      newBillButton.addEventListener("click", () =>
+        billsInstance.handleClickNewBill()
+      );
+
+      // Simuler le clic sur le bouton
+      userEvent.click(newBillButton);
+
+      // Vérifier que la fonction a été appelée et que la redirection se fait vers le formulaire de facture
+      expect(screen.getByText("Envoyer une note de frais")).toBeTruthy();
+    });
+  });
+
+  // Ton test pour getBills
+
+  describe("When I click on the eye icon", () => {
+    test("Then it should open a modal with the correct image", () => {
+      document.body.innerHTML = BillsUI({ data: bills });
+      // Simule la fonction onNavigate
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname });
+      };
+
+      // Initialisation requise pour configurer les écouteurs d'événements sur les icônes d'œil
+      const billsInstance = new Bills({
+        document,
+        onNavigate,
         store: null,
         localStorage: window.localStorage,
       });
 
-      //Remplacer la fonction handleClickIconEye
-      bills.handleClickIconEye = handleClickIconEye;
+      // Simule l'affichage de la modale
+      $.fn.modal = jest.fn();
 
-      //Recuperation et déclenchement du clic
-      const iconEye = screen.getByTestId("icon-eye");
-      fireEvent.click(iconEye);
+      // Sélectionne la première icône d'œil
+      const eyeIcon = screen.getAllByTestId("icon-eye")[0];
 
-      //Verification de l'appel de la fonction handleClickIconEye
-      expect(handleClickIconEye).toHaveBeenCalledWith(iconEye);
+      // Définit la fonction de gestion du clic sur l'icône d'œil
+      const handleClickIconEye = jest.fn(
+        billsInstance.handleClickIconEye(eyeIcon)
+      );
+
+      // Ajoute l'écouteur d'événement de clic à l'icône d'œil
+      eyeIcon.addEventListener("click", handleClickIconEye);
+
+      // Simule le clic sur l'icône d'œil
+      fireEvent.click(eyeIcon);
+
+      // Vérifie si la modale a bien été appelée
+      expect($.fn.modal).toHaveBeenCalledWith("show");
     });
+  });
+});
+
+describe("Bills", () => {
+  let billsInstance;
+
+  beforeEach(() => {
+    const onNavigate = (pathname) => {
+      document.body.innerHTML = ROUTES({ pathname });
+    };
+
+    // Simuler le store et bills
+    billsInstance = new Bills({
+      document,
+      onNavigate,
+      store: {
+        bills: jest.fn().mockReturnValue({
+          list: jest.fn(), // On s'assure que 'list' est une fonction mockée
+        }),
+      },
+      localStorage,
+    });
+  });
+
+  test("devrait transformer correctement les factures", async () => {
+    const snapshot = [
+      { date: "2023-01-01", status: "paid", id: 1 },
+      { date: "2023-01-02", status: "pending", id: 2 },
+    ];
+
+    // Simuler les fonctions de formatage avec un comportement dynamique
+    formatStatus.mockImplementation((status) => {
+      return status === "paid" ? "paid" : "pending";
+    });
+
+    // Simuler la méthode list() pour retourner snapshot
+    billsInstance.store.bills().list.mockResolvedValue(snapshot);
+
+    formatDate.mockReturnValue("01/01/2023");
+
+    const bills = await billsInstance.getBills();
+
+    expect(billsInstance.store.bills().list).toHaveBeenCalledTimes(1);
+    expect(formatDate).toHaveBeenCalledWith("2023-01-01");
+    expect(formatStatus).toHaveBeenCalledWith("paid");
+    expect(formatDate).toHaveBeenCalledWith("2023-01-02");
+    expect(formatStatus).toHaveBeenCalledWith("pending");
+
+    expect(bills).toEqual([
+      {
+        date: "2023-01-01",
+        status: "paid",
+        formatedDate: "01/01/2023",
+        id: 1,
+      },
+      {
+        date: "2023-01-02",
+        status: "pending",
+        formatedDate: "01/01/2023",
+        id: 2,
+      },
+    ]);
+  });
+
+  test("devrait logguer une erreur si formatDate échoue", async () => {
+    const snapshot = [{ date: "2023-01-01", status: "paid", id: 1 }];
+
+    billsInstance.store.bills().list.mockResolvedValue(snapshot);
+
+    formatDate.mockImplementation(() => {
+      throw new Error("invalid-date");
+    });
+
+    // Espionner console.log
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+
+    await billsInstance.getBills();
+
+    // expect(consoleSpy).toHaveBeenCalledTimes(1);
+    expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error), "for", {
+      date: "2023-01-01",
+      status: "paid",
+      id: 1,
+    });
+
+    consoleSpy.mockRestore();
   });
 });
