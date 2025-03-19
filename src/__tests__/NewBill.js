@@ -9,6 +9,8 @@ import { localStorageMock } from "../__mocks__/localStorage.js";
 import store from "../__mocks__/store.js";
 import { ROUTES } from "../constants/routes.js";
 import mockedBills from "../__mocks__/store.js";
+import mockStore from "../__mocks__/store.js";
+import BillsUI from "../views/BillsUI.js";
 //---------
 
 import userEvent from "@testing-library/user-event";
@@ -153,32 +155,64 @@ describe("Given I am connected as an employee", () => {
         "⚠️ Aucun fichier sélectionné !"
       );
     });
+    describe("WHEN I am on NewBill page and I submit a correct form", () => {
+      // TEST : submit correct form and attached file
+      test("THEN I should be redirected to Bills page", () => {
+        // DOM construction
+        document.body.innerHTML = NewBillUI();
+
+        // get DOM element
+        const newBillContainer = new NewBill({
+          document,
+          onNavigate,
+          firestore: null,
+          localStorage: window.localStorage,
+        });
+
+        // handle event submit attached file
+        const handleSubmit = jest.fn(newBillContainer.handleSubmit);
+        newBillContainer.fileName = "image.jpg";
+
+        // handle event submit form
+        const newBillForm = screen.getByTestId("form-new-bill");
+        newBillForm.addEventListener("submit", handleSubmit);
+        fireEvent.submit(newBillForm);
+
+        // expected results
+        expect(handleSubmit).toHaveBeenCalled();
+        expect(screen.getAllByText("Mes notes de frais")).toBeTruthy();
+      });
+    });
   });
 
-  // describe("When I am on NewBill Page", () => {
-  //   test("Then navigating should update the document body", () => {
-  //     onNavigate("/new-bill");
-  //     expect(document.body.innerHTML).toContain("Billed"); // Remplace par un texte visible dans NewBillUI()
-  //   });
-  //   test("Then NewBill should be initialized with correct properties and eventListeners", () => {
-  //     const newBill = new NewBill({
-  //       document,
-  //       onNavigate,
-  //       store,
-  //       localStorage: window.localStorage,
-  //     });
-
-  //     expect(newBill.document).toEqual(document);
-  //     expect(newBill.onNavigate).toBe(onNavigate);
-  //     expect(newBill.store).toBe(store);
-  //     expect(newBill.fileUrl).toBeNull();
-  //     expect(newBill.fileName).toBeNull();
-  //     expect(newBill.billId).toBeNull();
-  //   });
-  //   // test("Then ...", () => {
-  //   //   const html = NewBillUI();
-  //   //   document.body.innerHTML = html;
-  //   //   //to-do write assertion
-  //   // });
-  // });
+  describe("When I submit the form and there's an error with the server", () => {
+    //erreur 404
+    test("Then there is a mistake and it fails with 404 error message", async () => {
+      mockStore.bills(() => {
+        return {
+          list: () => {
+            return Promise.reject(new Error("Erreur 404"));
+          },
+        };
+      });
+      const html = BillsUI({ error: "Erreur 404" });
+      document.body.innerHTML = html;
+      const message = await screen.getByText(/Erreur 404/);
+      expect(message).toBeTruthy();
+    });
+    //erreur 500
+    test("Then there is a mistake and it fails with 500 error message", async () => {
+      mockStore.bills(() => {
+        return {
+          list: () => {
+            return Promise.reject(new Error("Erreur 500"));
+          },
+        };
+      });
+      const html = BillsUI({ error: "Erreur 500" });
+      document.body.innerHTML = html;
+      const message = await screen.getByText(/Erreur 500/);
+      expect(message).toBeTruthy();
+    });
+  });
 });
