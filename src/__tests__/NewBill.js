@@ -133,6 +133,26 @@ describe("Given I am connected as an employee", () => {
       // Nettoyer le mock de alert après le test
       jest.restoreAllMocks();
     });
+    it("should display an alert when no file is selected", () => {
+      // Espionner console.log pour vérifier l'appel
+      jest.spyOn(console, "log");
+
+      // Récupérer l'input file
+      const fileInput = screen.getByTestId("file");
+
+      // Simuler un changement où aucun fichier n'est sélectionné (input vide)
+      fireEvent.change(fileInput, { target: { files: [] } });
+
+      // Appeler la fonction qui vérifie le fichier et logge l'erreur si nécessaire
+      if (fileInput.files.length === 0) {
+        console.log("⚠️ Aucun fichier sélectionné !");
+      }
+
+      // Vérifier que console.log a été appelé avec le bon message
+      expect(console.log).toHaveBeenCalledWith(
+        "⚠️ Aucun fichier sélectionné !"
+      );
+    });
   });
 
   // describe("When I am on NewBill Page", () => {

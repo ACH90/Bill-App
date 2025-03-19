@@ -22,9 +22,6 @@ export default class NewBill {
     e.preventDefault();
     const file = this.document.querySelector(`input[data-testid="file"]`)
       .files[0];
-    console.log("Fichier récupéré :", file); // Vérifie si le fichier est bien présent
-    console.log("Nom du fichier :", file.name); // Devrait afficher "test.jpg"
-    console.log("Type du fichier :", file.type); // Devrait afficher "image/jpeg"
 
     if (!file) {
       console.log("⚠️ Aucun fichier sélectionné !");
