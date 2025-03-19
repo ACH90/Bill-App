@@ -18,20 +18,41 @@ export default class NewBill {
     new Logout({ document, localStorage, onNavigate });
   }
   handleChangeFile = (e) => {
+    console.log("handleChangeFile appelée"); // Vérifie que la fonction s'exécute
     e.preventDefault();
     const file = this.document.querySelector(`input[data-testid="file"]`)
       .files[0];
+    console.log("Fichier récupéré :", file); // Vérifie si le fichier est bien présent
+    console.log("Nom du fichier :", file.name); // Devrait afficher "test.jpg"
+    console.log("Type du fichier :", file.type); // Devrait afficher "image/jpeg"
+
+    if (!file) {
+      console.log("⚠️ Aucun fichier sélectionné !");
+      return;
+    }
     const filePath = e.target.value.split(/\\/g);
+    console.log("Voici e.target.value", e.target.value);
+    console.log("Chemin du fichier :", filePath);
     const fileName = filePath[filePath.length - 1];
+
+    console.log("Nom du fichier :", fileName);
 
     //Resolution Issue 3
 
     // Vérification de l'extension du fichier
     const ValidExtensions = ["jpg", "jpeg", "png"];
-    const fileExtension = fileName.split(".").pop().toLowerCase();
+    const fileExtension = fileName.includes(".")
+      ? fileName.split(".").pop().toLowerCase()
+      : "";
+
+    console.log("Extension du fichier:", fileExtension);
+    console.log(file);
 
     if (!ValidExtensions.includes(fileExtension)) {
-      alert("Seules les images au format jpg, jpeg ou png sont acceptées.");
+      console.log("Type de fichier invalide, on appelle l'alerte");
+      window.alert(
+        "Seules les images au format jpg, jpeg ou png sont acceptées."
+      );
       e.target.value = ""; // Réinitialise l'input file
       return;
     }
