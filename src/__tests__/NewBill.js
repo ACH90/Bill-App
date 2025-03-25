@@ -8,14 +8,8 @@ import NewBill from "../containers/NewBill.js";
 import { localStorageMock } from "../__mocks__/localStorage.js";
 import store from "../__mocks__/store.js";
 import { ROUTES } from "../constants/routes.js";
-import mockedBills from "../__mocks__/store.js";
-import mockStore from "../__mocks__/store.js";
 import BillsUI from "../views/BillsUI.js";
 //---------
-
-import userEvent from "@testing-library/user-event";
-
-import { handleChangeFile } from "../containers/NewBill.js";
 
 // Fonction de navigation pour rediriger
 const onNavigate = (pathname) => {
@@ -23,31 +17,7 @@ const onNavigate = (pathname) => {
 };
 
 describe("Given I am connected as an employee", () => {
-  let fileInput; // Déclaration ici pour qu'il soit accessible dans tous les tests
   let newBill; // Déclarer newBill globalement aussi
-
-  // beforeAll(() => {
-  //   Object.defineProperty(window, "localStorage", {
-  //     value: localStorageMock,
-  //   });
-  //   window.localStorage.setItem(
-  //     "user",
-  //     JSON.stringify({
-  //       type: "Employee",
-  //     })
-  //   );
-  // });
-  // beforeEach(() => {
-  //   document.body.innerHTML = NewBillUI(); // Ajoute le HTML attendu au document
-  //   fileInput = screen.getByTestId("file");
-  //   newBill = new NewBill({
-  //     // Instanciation de newBill pour tous les tests
-  //     document,
-  //     onNavigate,
-  //     store,
-  //     localStorage: window.localStorage,
-  //   });
-  // });
 
   describe("handleChangeFile integration Test Suite", () => {
     beforeEach(() => {
@@ -98,7 +68,7 @@ describe("Given I am connected as an employee", () => {
       // Simuler l'upload du fichier
       fireEvent.change(fileInput, { target: { files: [file] } });
 
-      console.log("AFTER fireEvent.change :", fileInput.files);
+      // console.log("AFTER fireEvent.change :", fileInput.files);
       expect(fileInput.files[0].name).toBe("test.jpg");
       // Vérifier que alert() a été appelé avec le bon message
       expect(window.alert).not.toHaveBeenCalledWith(
@@ -147,38 +117,24 @@ describe("Given I am connected as an employee", () => {
 
       // Appeler la fonction qui vérifie le fichier et logge l'erreur si nécessaire
       if (fileInput.files.length === 0) {
-        console.log("⚠️ Aucun fichier sélectionné !");
+        console.log(" Aucun fichier sélectionné !");
       }
 
       // Vérifier que console.log a été appelé avec le bon message
-      expect(console.log).toHaveBeenCalledWith(
-        "⚠️ Aucun fichier sélectionné !"
-      );
+      expect(console.log).toHaveBeenCalledWith(" Aucun fichier sélectionné !");
     });
     describe("WHEN I am on NewBill page and I submit a correct form", () => {
       // TEST : submit correct form and attached file
       test("THEN I should be redirected to Bills page", () => {
-        // DOM construction
-        document.body.innerHTML = NewBillUI();
+        // Mock de la fonction handleSubmit de NewBill
+        const handleSubmit = jest.fn(newBill.handleSubmit);
+        newBill.fileName = "image.jpg";
 
-        // get DOM element
-        const newBillContainer = new NewBill({
-          document,
-          onNavigate,
-          firestore: null,
-          localStorage: window.localStorage,
-        });
-
-        // handle event submit attached file
-        const handleSubmit = jest.fn(newBillContainer.handleSubmit);
-        newBillContainer.fileName = "image.jpg";
-
-        // handle event submit form
+        // Soumission du formulaire
         const newBillForm = screen.getByTestId("form-new-bill");
         newBillForm.addEventListener("submit", handleSubmit);
         fireEvent.submit(newBillForm);
 
-        // expected results
         expect(handleSubmit).toHaveBeenCalled();
         expect(screen.getAllByText("Mes notes de frais")).toBeTruthy();
       });
@@ -188,30 +144,30 @@ describe("Given I am connected as an employee", () => {
   describe("When I submit the form and there's an error with the server", () => {
     //erreur 404
     test("Then there is a mistake and it fails with 404 error message", async () => {
-      mockStore.bills(() => {
+      store.bills(() => {
         return {
           list: () => {
             return Promise.reject(new Error("Erreur 404"));
           },
         };
       });
-      const html = BillsUI({ error: "Erreur 404" });
-      document.body.innerHTML = html;
-      const message = await screen.getByText(/Erreur 404/);
+      const errorMessage = BillsUI({ error: "Erreur 404" });
+      document.body.innerHTML = errorMessage;
+      const message = await screen.findByText(/Erreur 404/);
       expect(message).toBeTruthy();
     });
     //erreur 500
     test("Then there is a mistake and it fails with 500 error message", async () => {
-      mockStore.bills(() => {
+      store.bills(() => {
         return {
           list: () => {
             return Promise.reject(new Error("Erreur 500"));
           },
         };
       });
-      const html = BillsUI({ error: "Erreur 500" });
-      document.body.innerHTML = html;
-      const message = await screen.getByText(/Erreur 500/);
+      const errorMessage = BillsUI({ error: "Erreur 500" });
+      document.body.innerHTML = errorMessage;
+      const message = await screen.findByText(/Erreur 500/);
       expect(message).toBeTruthy();
     });
   });
