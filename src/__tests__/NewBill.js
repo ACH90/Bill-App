@@ -55,10 +55,10 @@ describe("Given I am connected as an employee", () => {
 
       // Simuler un fichier
       const file = new File(["test"], "test.jpg", { type: "image/jpeg" });
-      console.log("Avant fireEvent.change :", fileInput.files);
-      console.log("Voici", file);
-      console.log("Type de fileInput :", fileInput.tagName); // Devrait afficher 'INPUT'
-      console.log("Type de fileInput (détail) :", fileInput.type); // Devrait afficher 'file'
+      // console.log("Avant fireEvent.change :", fileInput.files);
+      // console.log("Voici", file);
+      // console.log("Type de fileInput :", fileInput.tagName); // Devrait afficher 'INPUT'
+      // console.log("Type de fileInput (détail) :", fileInput.type); // Devrait afficher 'file'
 
       // Simuler l'upload du fichier en passant par e.target.value
       Object.defineProperty(fileInput, "value", {

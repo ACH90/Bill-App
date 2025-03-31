@@ -97,10 +97,9 @@ describe("Given I am connected as an employee", () => {
 
   describe("When I click on the eye icon", () => {
     test("Then it should open a modal with the correct image", () => {
-      // Simule l'affichage de la modale
+      // Mock de .modal()
       // $.fn.modal est la methode bootstrap pour afficher / masquer les modales
       $.fn.modal = jest.fn();
-
       // Sélectionne la première icône d'œil
       const eyeIcon = screen.getAllByTestId("icon-eye")[0];
 
@@ -116,6 +115,7 @@ describe("Given I am connected as an employee", () => {
       fireEvent.click(eyeIcon);
 
       expect(eyeIcon).toBeTruthy();
+      expect(handleClickIconEye).toHaveBeenCalledTimes(1);
       // Vérifie si la modale a bien été appelée
       expect($.fn.modal).toHaveBeenCalledWith("show");
     });
