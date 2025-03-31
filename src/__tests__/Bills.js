@@ -9,21 +9,25 @@ import { bills } from "../fixtures/bills.js";
 import { ROUTES, ROUTES_PATH } from "../constants/routes.js";
 import { localStorageMock } from "../__mocks__/localStorage.js";
 import userEvent from "@testing-library/user-event";
-import { handleClickNewBill } from "../containers/Bills.js";
-import { getBills } from "../containers/Bills.js";
-import store from "../app/Store.js";
+import store from "../__mocks__/store.js";
 import { formatDate, formatStatus } from "../app/format.js";
+import router from "../app/Router.js";
 
+let billsInstance;
 // Simule la fonction formatDate et formatStatus pour les tests
 jest.mock("../app/format.js", () => ({
   formatDate: jest.fn(),
   formatStatus: jest.fn(),
 }));
-
-import router from "../app/Router.js";
+// Simule la fonction onNavigate pour rediriger
+const onNavigate = (pathname) => {
+  document.body.innerHTML = ROUTES({ pathname });
+};
 
 describe("Given I am connected as an employee", () => {
-  beforeAll(() => {
+  beforeEach(() => {
+    // Charger le HTML initial avec les factures
+    document.body.innerHTML = BillsUI({ data: bills });
     Object.defineProperty(window, "localStorage", {
       value: localStorageMock,
     });
@@ -33,6 +37,17 @@ describe("Given I am connected as an employee", () => {
         type: "Employee",
       })
     );
+    // Créer une instance de Bills avec les dépendances nécessaires
+    billsInstance = new Bills({
+      document,
+      onNavigate,
+      store,
+      localStorage,
+    });
+  });
+  afterEach(() => {
+    jest.clearAllMocks();
+    document.body.innerHTML = "";
   });
   describe("When I am on Bills Page", () => {
     test("Then bill icon in vertical layout should be highlighted", async () => {
@@ -43,11 +58,10 @@ describe("Given I am connected as an employee", () => {
       window.onNavigate(ROUTES_PATH.Bills);
       await waitFor(() => screen.getByTestId("icon-window"));
       const windowIcon = screen.getByTestId("icon-window");
-      expect(windowIcon.id).toBe("layout-icon1");
       //to-do write expect expression
+      expect(windowIcon.id).toBe("layout-icon1");
     });
     test("Then bills should be ordered from earliest to latest", () => {
-      document.body.innerHTML = BillsUI({ data: bills });
       const dates = screen
         .getAllByText(
           /^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$/i
@@ -61,25 +75,9 @@ describe("Given I am connected as an employee", () => {
   //-------------------MES TESTS------------------
   describe("When I click on the New bill button", () => {
     test("Then I should be redirected to new bill form", () => {
-      // Charger le HTML initial avec les factures
-      document.body.innerHTML = BillsUI({ data: bills });
-
-      // Fonction de navigation pour rediriger
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
-      };
-
-      // Créer une instance de Bills avec les dépendances nécessaires
-      const billsInstance = new Bills({
-        document,
-        onNavigate,
-        store: null,
-        localStorage,
-      });
-
       // Sélectionner le bouton "New Bill"
       const newBillButton = screen.getByTestId("btn-new-bill");
-
+      billsInstance.handleClickNewBill = jest.fn();
       // Ajouter un eventListener à ce bouton qui appelle handleClickNewBill de l'instance de Bills
       newBillButton.addEventListener("click", () =>
         billsInstance.handleClickNewBill()
@@ -88,30 +86,19 @@ describe("Given I am connected as an employee", () => {
       // Simuler le clic sur le bouton
       userEvent.click(newBillButton);
 
+      expect(screen.getByTestId("form-new-bill")).toBeTruthy();
       // Vérifier que la fonction a été appelée et que la redirection se fait vers le formulaire de facture
       expect(screen.getByText("Envoyer une note de frais")).toBeTruthy();
+      expect(billsInstance.handleClickNewBill).toHaveBeenCalledTimes(1);
     });
   });
 
-  // Ton test pour getBills
+  // Test pour getBills
 
   describe("When I click on the eye icon", () => {
     test("Then it should open a modal with the correct image", () => {
-      document.body.innerHTML = BillsUI({ data: bills });
-      // Simule la fonction onNavigate
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
-      };
-
-      // Initialisation requise pour configurer les écouteurs d'événements sur les icônes d'œil
-      const billsInstance = new Bills({
-        document,
-        onNavigate,
-        store: null,
-        localStorage: window.localStorage,
-      });
-
       // Simule l'affichage de la modale
+      // $.fn.modal est la methode bootstrap pour afficher / masquer les modales
       $.fn.modal = jest.fn();
 
       // Sélectionne la première icône d'œil
@@ -128,6 +115,7 @@ describe("Given I am connected as an employee", () => {
       // Simule le clic sur l'icône d'œil
       fireEvent.click(eyeIcon);
 
+      expect(eyeIcon).toBeTruthy();
       // Vérifie si la modale a bien été appelée
       expect($.fn.modal).toHaveBeenCalledWith("show");
     });
@@ -138,10 +126,6 @@ describe("Bills", () => {
   let billsInstance;
 
   beforeEach(() => {
-    const onNavigate = (pathname) => {
-      document.body.innerHTML = ROUTES({ pathname });
-    };
-
     // Simuler le store et bills
     billsInstance = new Bills({
       document,
@@ -155,7 +139,7 @@ describe("Bills", () => {
     });
   });
 
-  test("devrait transformer correctement les factures", async () => {
+  test("should correctly format bills", async () => {
     const snapshot = [
       { date: "2023-01-01", status: "paid", id: 1 },
       { date: "2023-01-02", status: "pending", id: 2 },
@@ -195,7 +179,7 @@ describe("Bills", () => {
     ]);
   });
 
-  test("devrait logguer une erreur si formatDate échoue", async () => {
+  test("should correctly log errors", async () => {
     const snapshot = [{ date: "2023-01-01", status: "paid", id: 1 }];
 
     billsInstance.store.bills().list.mockResolvedValue(snapshot);
