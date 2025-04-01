@@ -11,14 +11,13 @@ import { ROUTES } from "../constants/routes.js";
 import BillsUI from "../views/BillsUI.js";
 //---------
 
-// Fonction de navigation pour rediriger
+// Simule la fonction onNavigate pour rediriger
 const onNavigate = (pathname) => {
   document.body.innerHTML = ROUTES({ pathname });
 };
+let newBill; // Déclarer newBill globalement aussi
 
 describe("Given I am connected as an employee", () => {
-  let newBill; // Déclarer newBill globalement aussi
-
   describe("handleChangeFile integration Test Suite", () => {
     beforeEach(() => {
       Object.defineProperty(window, "localStorage", {

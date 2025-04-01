@@ -39,9 +39,9 @@ export default class NewBill {
 
     // Vérification de l'extension du fichier
     const ValidExtensions = ["jpg", "jpeg", "png"];
-    const fileExtension = fileName.includes(".")
-      ? fileName.split(".").pop().toLowerCase()
-      : "";
+    const fileExtension = fileName.includes(".") //Vérifie si fileName contient au moins un point (.
+      ? fileName.split(".").pop().toLowerCase() //on extrait l'extension.
+      : ""; //sinon on retourne une chaîne vide.
 
     // console.log("Extension du fichier:", fileExtension);
     // console.log("file : ", file);

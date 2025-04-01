@@ -50,10 +50,10 @@ export default class Login {
     e.preventDefault();
     const user = {
       type: "Admin",
-      email: e.target.querySelector(`input[data-testid="admin-email-input"]`) //2nd Issue ok
+      email: e.target.querySelector(`input[data-testid="admin-email-input"]`) //2nd Issue ok remplacement employee-email-input par admin-email-input
         .value,
       password: e.target.querySelector(
-        `input[data-testid="admin-password-input"]`
+        `input[data-testid="admin-password-input"]` //remplacement ici aussi employee-password-input par admin-password-input
       ).value,
       status: "connected",
     };
